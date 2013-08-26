@@ -1,0 +1,53 @@
+{
+  "checks" : [
+    {
+      "type" : "http",
+      "name" : "VME P Server(vmeece11)",
+      "url" : "http://10.211.10.237/thirdparty"
+    },{
+      "type" : "http",
+      "name" : "VME O Server",
+      "url" : "http://10.211.10.139/diactus/"
+    },{
+      "type" : "http",
+      "name" : "Pilot Data Server",
+      "url" : "http://10.211.10.40:8177/"
+    },
+    {
+      "name" : "Some other Server",
+      "type" : "http",
+      "url" : "http://10.211.10.140:8177/"
+    },
+    {
+      "name" : "Preview Server",
+      "type" : "net",
+      "host" : "10.211.20.71",
+      "port" : 21098
+    },
+    {
+      "name" : "Preview Server Admin",
+      "type" : "net",
+      "host" : "10.211.20.71",
+      "port" : 54000
+    },
+    {
+      "name" : "Fake previewServer",
+      "type" : "net",
+      "host" : "100.211.20.71",
+      "port" : 54000
+    }
+  ],
+  "reports" : [
+    {
+      "type" : "html",
+      "location" : "/var/www/"
+    },
+    {
+      "type" : "log",
+      "file" : "D:\\work\\nodejs\\notific\\chichinga.report.log"
+    },
+    {
+      "type" : "console"
+    }
+  ]
+}

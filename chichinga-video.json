@@ -1,0 +1,49 @@
+{
+  "checks" : [
+    {
+      "type" : "http",
+      "name" : "VME P Server(vmeece11)",
+      "url" : "http://10.211.10.237/thirdparty"
+    },{
+      "type" : "http",
+      "name" : "VME O Server",
+      "url" : "http://10.211.10.139/diactus/"
+    },{
+      "type" : "http",
+      "name" : "Pilot Data Server",
+      "url" : "http://10.211.10.40:8177/"
+    },
+    {
+      "name" : "Some Stupid Server",
+      "type" : "http",
+      "url" : "http://10.211.10.140:8177/"
+    },
+    {
+      "name" : "Preview Server Webapp",
+      "type" : "http",
+      "url" : "http://10.211.20.71:21098/"
+    },
+    {
+      "name" : "Preview Server",
+      "type" : "net",
+      "host" : "10.211.20.71",
+      "port" : 21098
+    }
+  ],
+  "reports" : [
+
+    {
+      "type": "hipchat",
+      "uriTemplate" : "https://api.hipchat.com/v1/rooms/message?format=json&auth_token=6d7b257bab2cc1bbebba3fe9a81cb4&room_id=267512&from=Chichinga&message={msg}",
+      "policy" : "all"
+    },
+    {
+      "type" : "log",
+      "file" : "D:\\work\\nodejs\\notific\\chichinga-video.report.log",
+      "policy" : "all"
+    },
+    {
+      "type" : "console"
+    }
+  ]
+}
