@@ -7,12 +7,31 @@ var os = require("os");
 
 var notifier = new Notifier();
 
-readJSON("chichinga-video.json", function(data) {
-  if (data != null) {
-    // TODO: check thy connectivity
-    processChichinga(data);
-  }
-});
+lockAndLoad();
+setInterval(lockAndLoad, 30 *(60*1000));
+
+function lockAndLoad() {
+  readJSON("chichinga-video.json", function (data) {
+    if (data != null) {
+      // TODO: check thy connectivity
+      processChichinga(data);
+    }
+  });
+}
+
+function processChichinga(pConfig) {
+  console.log("processing with config: \n" + JSON.stringify(pConfig));
+
+  var reporters = createReporters(pConfig.reports);
+  notifier.setReporters(reporters);
+
+  //initServer();
+
+  var checkers = createCheckers(pConfig.checks);
+  checkers.forEach(function(checker) {
+    checker.check();
+  });
+}
 
 function initServer() {
   process.on('exit', function() {
@@ -24,25 +43,11 @@ function initServer() {
   });
 }
 
-function processChichinga(pConfig) {
-  console.log("processing with config: \n" + JSON.stringify(pConfig));
-
-  var reporters = createReporters(pConfig.reports);
-  notifier.setReporters(reporters);
-
-  initServer();
-
-  var checkers = createCheckers(pConfig.checks);
-  checkers.forEach(function(checker) {
-    checker.check();
-  });
-}
-
 function createMsg(pPolicy, pCheck, pResult) {
   switch (pPolicy) {
     case "changeOnly" :
       if (pResult.change) {
-        return "'" + pCheck.name + "' went #" + pResult.state + "\n" + JSON.stringify(pCheck);
+        return pCheck.name + " went #" + pResult.state + "\n" + JSON.stringify(pCheck);
       }
       break;
     case "downOnly" :
@@ -57,7 +62,7 @@ function createMsg(pPolicy, pCheck, pResult) {
 }
 
 function createStateMsg(pCheck, pResult) {
-  var msg = "'" + pCheck.name + "' is #" + pResult.state + "";
+  var msg = pCheck.name + " is #" + pResult.state + "";
   if (pResult.state == "DOWN") {
     msg += "\n" + JSON.stringify(pCheck);
   }
@@ -101,8 +106,34 @@ function createCheckers(pChecks) {
     else if (check.type == 'net') {
       checkers.push(new NetChecker(check));
     }
+    else if (check.type == 'self') {
+      checkers.push(new SelfChecker(check));
+    }
   });
   return checkers;
+}
+
+function SelfChecker(pCheckConf) {
+  var checkConf = pCheckConf;
+  this.check = function() {
+    var statFile = "_self.stat.json";
+
+    readJSON(statFile, function(data) {
+      if (!data) {
+        saveJSON(statFile, {"time" : new Date()});
+      }
+      else {
+        var lastTime = new Date(data.time);
+        var curTime = new Date();
+        var diffInMins = (curTime.getTime() - lastTime.getTime()) / (1000*60);
+        if (diffInMins > checkConf.duration) {
+          notifier.notifyMsg(getSelfStatusMsg(), false);
+          saveJSON(statFile, {"time" : curTime});
+        }
+        console.log("found diff : " + diffInMins);
+      }
+    });
+  };
 }
 
 function HttpChecker(pCheckConf) {
@@ -299,4 +330,16 @@ function readJSON(pJsonFile, fpCallback) {
 function time() {
   var d = new Date();
   return "[" + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()  + ', ' + d.getHours()  + ':' + d.getMinutes() + ':' + d.getSeconds() + "] ";
+}
+
+var SelfStatMsg = [
+    "I'm here, as always!",
+    "I am watching over your precious.",
+    "I stand ready.",
+    "Lock and load!",
+    "Playing!"
+]
+function getSelfStatusMsg() {
+  var rand = Math.floor(Math.random() * SelfStatMsg.length);
+  return SelfStatMsg[rand];
 }

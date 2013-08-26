@@ -1,5 +1,6 @@
 {
   "checks" : [
+    { "type" : "self", "name" : "Chichinga ", "duration" : 30},
     {
       "type" : "http",
       "name" : "VME P Server(vmeece11)",
@@ -28,6 +29,12 @@
       "type" : "net",
       "host" : "10.211.20.71",
       "port" : 21098
+    },
+    {
+      "name" : "Viz Engine",
+      "type" : "net",
+      "host" : "10.211.20.71",
+      "port" : 50007
     }
   ],
   "reports" : [
@@ -39,7 +46,7 @@
     },
     {
       "type" : "log",
-      "file" : "D:\\work\\nodejs\\notific\\chichinga-video.report.log",
+      "file" : "work\\chichinga-video.report.log",
       "policy" : "all"
     },
     {
