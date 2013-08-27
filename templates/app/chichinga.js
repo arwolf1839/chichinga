@@ -3,15 +3,28 @@ var http = require("http");
 var https = require("https");
 var net = require("net");
 var url = require("url");
-var os = require("os");
 
 var notifier = new Notifier();
 
-lockAndLoad();
-setInterval(lockAndLoad, 30 *(60*1000));
+var mConfigFile;
+var mRepeatInMin;
+
+parseArguments();
+
+if (mConfigFile == null) {
+  console.log("ERROR: " + "no config file in argument. Example : $ node chichinga.js -f chichinga-conf.json");
+}
+else {
+  console.log("using config file : [" + mConfigFile + "]");
+  lockAndLoad();
+
+  if (mRepeatInMin != null) {
+    setInterval(lockAndLoad, mRepeatInMin *(60*1000));
+  }
+}
 
 function lockAndLoad() {
-  readJSON("chichinga-video.json", function (data) {
+  readJSON(mConfigFile, function (data) {
     if (data != null) {
       // TODO: check thy connectivity
       processChichinga(data);
@@ -100,15 +113,20 @@ function Notifier() {
 function createCheckers(pChecks) {
   var checkers = [];
   pChecks.forEach(function(check) {
-    if (check.type == 'http') {
-      checkers.push(new HttpChecker(check));
-    }
-    else if (check.type == 'net') {
-      checkers.push(new NetChecker(check));
-    }
-    else if (check.type == 'self') {
-      checkers.push(new SelfChecker(check));
-    }
+    if (check.enabled != 'false') {
+      if (check.type == 'http') {
+        checkers.push(new HttpChecker(check));
+      }
+      else if (check.type == 'net') {
+        checkers.push(new NetChecker(check));
+      }
+      else if (check.type == 'self') {
+        checkers.push(new SelfChecker(check));
+      }
+      else if (check.type == 'jql') {
+        checkers.push(new JQLChecker(check));
+      }
+    };
   });
   return checkers;
 }
@@ -116,24 +134,28 @@ function createCheckers(pChecks) {
 function SelfChecker(pCheckConf) {
   var checkConf = pCheckConf;
   this.check = function() {
-    var statFile = "_self.stat.json";
-
-    readJSON(statFile, function(data) {
-      if (!data) {
-        saveJSON(statFile, {"time" : new Date()});
-      }
-      else {
-        var lastTime = new Date(data.time);
-        var curTime = new Date();
-        var diffInMins = (curTime.getTime() - lastTime.getTime()) / (1000*60);
-        if (diffInMins > checkConf.duration) {
-          notifier.notifyMsg(getSelfStatusMsg(), false);
-          saveJSON(statFile, {"time" : curTime});
-        }
-        console.log("found diff : " + diffInMins);
-      }
+    ifDurationPassed("_self.stat.json", checkConf.duration, function() {
+      notifier.notifyMsg(getSelfStatusMsg(), false);
     });
   };
+}
+
+function ifDurationPassed(pTimestampFile, pDuration, pCallback) {
+  readJSON(pTimestampFile, function(data) {
+    if (!data) {
+      saveJSON(pTimestampFile, {"time" : new Date()});
+      pCallback();
+    }
+    else {
+      var lastTime = new Date(data.time);
+      var curTime = new Date();
+      var diffInMins = (curTime.getTime() - lastTime.getTime()) / (1000*60);
+      if (diffInMins > pDuration) {
+        pCallback();
+        saveJSON(pTimestampFile, {"time" : curTime});
+      }
+    }
+  });
 }
 
 function HttpChecker(pCheckConf) {
@@ -156,6 +178,44 @@ function HttpChecker(pCheckConf) {
           console.log("ERROR:" + e.message);
           notifyStatus(checkConf, "DOWN");
         });
+  }
+}
+
+function JQLChecker(pCheckConf) {
+  var checkConf = pCheckConf;
+  var loc = url.parse(checkConf.url + encodeURIComponent(checkConf.jql));
+  loc.headers = {
+    "Accept" : "application/json"
+  };
+  loc.auth = "anh:somtamB0";
+
+  this.check = function() {
+    //ifDurationPassed("_self.stat.json", checkConf.duration, function () {
+    console.log("in JQL check")
+    https.get(loc,function (res) {
+      var data = ""
+      if (res.statusCode != 200) {
+        console.log(loc.hostname + " not ok" + JSON.stringify(res.headers));
+      }
+      ;
+
+      res.setEncoding('utf8');
+      res.on('data', function (chunk) {
+        console.log("I have data:" + chunk);
+        data += chunk
+      });
+      res.on('end', function () {
+        console.log("Full data: " + data);
+        var result = JSON.parse(data);
+        result.issues.forEach(function(issue){
+          notifier.notifyMsg(issue.fields.reporter.displayName + " has created " + issue.key + ": " + issue.fields.summary);
+        });
+      });
+    }).on("error", function (e) {
+          console.log("ERROR:" + e.message);
+        });
+    //});
+
   }
 }
 
@@ -187,7 +247,7 @@ function NetChecker(pCheckConf) {
       notifyStatus(pCheckConf, "DOWN");
       console.log('ERROR: ' + e.message);
     });
-    client.setTimeout(5000, function () {
+    client.setTimeout(10000, function () {
       notifyStatus(pCheckConf, "DOWN");
       client.destroy();
     });
@@ -343,3 +403,21 @@ function getSelfStatusMsg() {
   var rand = Math.floor(Math.random() * SelfStatMsg.length);
   return SelfStatMsg[rand];
 }
+
+function parseArguments() {
+  process.argv.forEach(function (arg, index) {
+    if (arg == "-f") {
+      mConfigFile = process.argv[index + 1];
+    }
+    if (arg == "-r") {
+      mRepeatInMin = process.argv[index + 1];
+    }
+  })
+}
+
+
+/** TODO **/
+/**
+ * - Manage work and log directory
+ * - Check network connectivity
+ */
