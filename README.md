@@ -7,7 +7,7 @@ Usage
 ======
 
 ### run with a config file
-`node chichinga.js -f chichinga-conf.json `
+`node chichinga.js -f chichinga0.json `
 
 ### run repeatatively after every 10 minutes
-`node chichinga.js -f chichinga-conf.json -r 10`
+`node chichinga.js -f chichinga0.json -r 10`
