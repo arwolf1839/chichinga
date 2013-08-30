@@ -24,13 +24,16 @@ else {
 }
 
 function lockAndLoad() {
-  readJSON(mConfigFile, function (data) {
-    if (data != null) {
-      // TODO: check thy connectivity
-      processChichinga(data);
-    }
+  ifICanAcessInternet(function(){
+    readJSON(mConfigFile, function (data) {
+      if (data != null) {
+        // TODO: check thy connectivity
+        processChichinga(data);
+      }
+    });
   });
 }
+
 
 function processChichinga(pConfig) {
   console.log("processing with config: \n" + JSON.stringify(pConfig));
@@ -415,9 +418,23 @@ function parseArguments() {
   })
 }
 
+function ifICanAcessInternet(pCallback) {
+  var client = http.get(" http://www.google.com.bd/", function (res) {
+    if (res.statusCode == 200) {
+      pCallback();
+    }
+    else {
+      console.log("I can't access internet:" + res.statusCode);
+    }
+    res.on('data', function (data) {});
+  });
+  client.on("error", function (e) {
+    console.log("I can't access internet, ERROR:" + e.message);
+  });
+}
+
 
 /** TODO **/
 /**
  * - Manage work and log directory
- * - Check network connectivity
  */
